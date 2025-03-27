@@ -1,0 +1,1 @@
+{"root":["../src/authentication.ts","../src/moshimoshi.ts","../src/context/authcontext.tsx","../src/entity/endpoint.ts","../src/entity/token.ts","../src/entity/tokens.ts","../src/entity/types.ts","../src/route/protectedroute.tsx","../src/storage/storage.ts","../src/storage/tokentype.ts","../src/storage/local/localstorageimpl.ts"],"version":"5.7.3"}
