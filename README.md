@@ -1,54 +1,169 @@
-# React + TypeScript + Vite
+# moshimoshi-react
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+`moshimoshi-react` is a lightweight and extendable HTTP client wrapper around Axios with automatic token handling, tailored for React applications. It manages login, token storage, access token refresh, and secured/unsecured API calls in a clean and reusable way.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔒 Access and refresh token management
+- 🔄 Auto-refresh access tokens on 401 responses
+- 🔐 Authenticated and public API requests
+- ⚙️ Customizable endpoints and token storage
+- 🔁 Singleton pattern to keep one global instance
+- 🪝 React-friendly with browser redirect on auth failures
+- 📦 Tree-shakable and optimized for bundlers
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 📦 Installation
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+npm install moshimoshi-react
+# or
+yarn add moshimoshi-react
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🔧 Setup
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+### 1. Initialize the singleton client
+
+```ts
+import { Moshimoshi } from 'moshimoshi-react';
+import { LocalStorageAdapter } from './storage/LocalStorageAdapter';
+import { Endpoint } from './entity/Endpoint';
+
+const storage = new LocalStorageAdapter();
+
+const loginEndpoint = new Endpoint('/api/login', 'POST');
+const refreshEndpoint = new Endpoint('/api/refresh', 'POST');
+
+const api = Moshimoshi.getInstance(storage, loginEndpoint, refreshEndpoint);
 ```
+
+### 2. Logging in
+
+```ts
+await api.login({
+  username: 'user@example.com',
+  password: 'securepassword',
+});
+```
+
+### 3. Making requests
+
+#### Authenticated
+
+```ts
+const securedEndpoint = new Endpoint('/api/private', 'GET');
+const result = await api.loadAuthorized(securedEndpoint);
+```
+
+#### Public
+
+```ts
+const publicEndpoint = new Endpoint('/api/public', 'GET');
+const result = await api.load(publicEndpoint);
+```
+
+### 4. Logging out
+
+```ts
+await api.logout(); // Will clear all tokens and redirect to /login
+```
+
+---
+
+## 🧱 Core Concepts
+
+### `Endpoint`
+
+Encapsulates API endpoint details:
+
+```ts
+const endpoint = new Endpoint('/api/users/:id', 'GET', {
+  parameters: { id: '123' },
+  query: { include: 'details' },
+  headers: { 'X-Custom': 'value' },
+});
+```
+
+### `Token`
+
+Represents access/refresh tokens with optional expiration.
+
+### `Storage`
+
+You can plug in your own `Storage` implementation (e.g., `localStorage`, `sessionStorage`, `SecureStore`) using the interface provided.
+
+---
+
+## 🧪 Example Storage Adapter
+
+```ts
+export class LocalStorageAdapter implements Storage {
+  save(token: Token, type: TokenType): void {
+    localStorage.setItem(type, JSON.stringify(token));
+  }
+
+  retrieve(type: TokenType): Token | undefined {
+    const raw = localStorage.getItem(type);
+    return raw ? Token.fromJSON(JSON.parse(raw)) : undefined;
+  }
+
+  deleteAll(): void {
+    localStorage.clear();
+  }
+}
+```
+
+---
+
+## 💡 Notes
+
+- If the access token is expired and no refresh token is available, the user is redirected to `/login`.
+- `loadAuthorized()` automatically attaches the Bearer token.
+- You can add a `logoutEndpoint` for server-side session clearing.
+
+---
+
+## 🔗 Peer Dependencies
+
+This package expects `react`, `react-dom`, and `react-router-dom` to be present in your project.
+
+```json
+"peerDependencies": {
+  "react": "^19.0.0",
+  "react-dom": "^19.0.0",
+  "react-router-dom": "^7.4.0"
+}
+```
+
+---
+
+## 📁 Project Structure
+
+- Written in **TypeScript**
+- Bundled with **Rollup**
+- Output formats: `CommonJS` and `ESModule`
+- Supports tree-shaking
+
+---
+
+## 📜 License
+
+MIT
+
+---
+
+## ✨ Contributing
+
+Feel free to open issues or submit PRs to improve the library. Feedback is always welcome!
+
+---
+
+## 🧠 TODO
+
+- [ ] React hook integration (`useMoshimoshi`)
+- [ ] Token expiration countdown utility
+- [ ] SSR support
